@@ -271,6 +271,15 @@ class Fp8LinearMethod(LinearMethodBase):
                 layer.register_parameter("input_scale", None)
 
     def process_weights_after_loading(self, layer: Module) -> None:
+
+        print("=" * 50)
+        print("FP8 linear method online quantization called")
+        print("block quant", self.block_quant)
+        print("is checkpoints fp8 serialized", self.quant_config.is_checkpoint_fp8_serialized)
+        import traceback
+        print(traceback.print_stack())
+        print("=" * 50)
+
         # Block quant doesn't need to process weights after loading
         if self.block_quant:
             return
