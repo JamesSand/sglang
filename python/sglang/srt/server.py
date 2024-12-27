@@ -426,6 +426,9 @@ def launch_engine(
     global tokenizer_manager
     global scheduler_info
 
+    # type(tokenizer_manager) = NoneType
+    # type(scheduler_info) = NoneType
+
     # Configure global environment
     configure_logger(server_args)
     server_args.check_server_args()
@@ -440,6 +443,7 @@ def launch_engine(
         server_args.model_path, server_args.tokenizer_path
     )
 
+    # data parallel 很好理解，就是每个 GPU 上放不同的数据
     if server_args.dp_size == 1:
         # Launch tensor parallel scheduler processes
         scheduler_procs = []
@@ -449,9 +453,26 @@ def launch_engine(
             tp_size_per_node * server_args.node_rank,
             tp_size_per_node * (server_args.node_rank + 1),
         )
+
+        # 这里相当于起了一堆进程，子进程只能向主进程传递消息。或者是主进程向子进程传递消息
+
+        # Tensor parallel 是每个 GPU 上算矩阵乘法的一部分，最后 AllReduce 再合起来。这么看的话，应该是子进程向主进程发消息
+        
+        # duplex 说明这个管道是单向的
         for tp_rank in tp_rank_range:
             reader, writer = mp.Pipe(duplex=False)
             gpu_id = server_args.base_gpu_id + tp_rank % tp_size_per_node
+            
+            # # Zhizhou 我想这里 debug 我可以这么写
+            # run_scheduler_process(server_args, port_args, gpu_id, tp_rank, None, writer)
+
+            # print("=" * 50)
+            # print("debug over")
+            # print("=" * 50)
+
+            # exit(0)
+            
+            
             proc = mp.Process(
                 target=run_scheduler_process,
                 args=(server_args, port_args, gpu_id, tp_rank, None, writer),
@@ -474,6 +495,8 @@ def launch_engine(
             args=(server_args, port_args, writer),
         )
         proc.start()
+
+    # detokenizer 也是只有一个子进程
 
     # Launch detokenizer process
     detoken_proc = mp.Process(
@@ -515,6 +538,7 @@ def launch_server(
     The SRT server consists of an HTTP server and the SRT engine.
 
     1. HTTP server: A FastAPI server that routes requests to the engine.
+    看起来应该只有一个 TokenizeManager
     2. SRT engine:
         1. TokenizerManager: Tokenizes the requests and sends them to the scheduler.
         2. Scheduler (subprocess): Receives requests from the Tokenizer Manager, schedules batches, forwards them, and sends the output tokens to the Detokenizer Manager.

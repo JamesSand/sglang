@@ -361,9 +361,23 @@ class DefaultModelLoader(BaseModelLoader):
 
             model.load_weights(self._get_all_weights(model_config, model))
 
-            for _, module in model.named_modules():
+            # 我想知道 FP8 的 quantization 参数传入是在上边的 initializa_model 起作用的还是在下边起作用的
+            # 我猜是在上边起作用的
+
+            # 我猜对了，在这里所有的 linear 层已经有 FP8 quantization 方法了
+
+            # 对于 --quantization FP8 来说
+            # 他们 load 的方法是
+            # sglang.srt.layers.quantization.fp8.Fp8LinearMethod
+
+            # print("=" * 50)
+
+            for module_name, module in model.named_modules():
                 quant_method = getattr(module, "quant_method", None)
                 if quant_method is not None:
+
+                    # print(module_name, quant_method)
+
                     # When quant methods need to process weights after loading
                     # (for repacking, quantizing, etc), they expect parameters
                     # to be on the global target device. This scope is for the
@@ -371,6 +385,10 @@ class DefaultModelLoader(BaseModelLoader):
                     # parameters onto device for processing and back off after.
                     with device_loading_context(module, target_device):
                         quant_method.process_weights_after_loading(module)
+
+            # print("=" * 50)
+
+
         return model.eval()
 
 

@@ -19,6 +19,12 @@ def get_model(
     device_config: DeviceConfig,
 ) -> nn.Module:
     loader = get_model_loader(load_config)
+
+
+    # 这里的 loader 是 sglang.srt.model_loader.loader.DefaultModelLoader
+    # --quantization 在这里的 model_config 里边
+    # torchao_config 也在 model_config 里边 
+
     return loader.load_model(
         model_config=model_config,
         device_config=device_config,

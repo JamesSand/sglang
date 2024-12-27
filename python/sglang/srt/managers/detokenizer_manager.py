@@ -217,6 +217,8 @@ def run_detokenizer_process(
     configure_logger(server_args)
     parent_process = psutil.Process().parent()
 
+    # 这里也是通过一个子进程启动的
+    # 所以这个子进程也在这里一直循环
     try:
         manager = DetokenizerManager(server_args, port_args)
         manager.event_loop()

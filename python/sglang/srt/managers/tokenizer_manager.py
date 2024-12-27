@@ -93,7 +93,7 @@ class ReqState:
 
 class TokenizerManager:
     """TokenizerManager is a process that tokenizes the text."""
-
+    # 应该也能 tokenize image 吧
     def __init__(
         self,
         server_args: ServerArgs,

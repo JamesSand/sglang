@@ -189,6 +189,9 @@ class Scheduler:
         else:
             TpWorkerClass = TpModelWorker
 
+        # 这里是把 model load 进来的地方
+        # 这里调用的是 TpModelWorker
+
         self.tp_worker = TpWorkerClass(
             server_args=server_args,
             gpu_id=gpu_id,
@@ -378,6 +381,7 @@ class Scheduler:
     @torch.no_grad()
     def event_loop_normal(self):
         """A normal scheduler loop."""
+        # 这个 scheduler 进程在这里一直死循环来提供服务
         while True:
             recv_reqs = self.recv_requests()
             self.process_input_requests(recv_reqs)
@@ -386,6 +390,7 @@ class Scheduler:
             if self.server_args.enable_dp_attention:
                 batch = self.prepare_dp_attn_batch(batch)
 
+            # 这个参数就是用来 debug 用的
             self.cur_batch = batch
 
             if batch:
@@ -1529,6 +1534,7 @@ def run_scheduler_process(
         pipe_writer.send(
             {"status": "ready", "max_total_num_tokens": scheduler.max_total_num_tokens}
         )
+        # 这个是允许 CPU 和 GPU 计算时间重合的
         if scheduler.enable_overlap:
             scheduler.event_loop_overlap()
         else:

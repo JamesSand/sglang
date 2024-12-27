@@ -272,20 +272,13 @@ class Fp8LinearMethod(LinearMethodBase):
 
     def process_weights_after_loading(self, layer: Module) -> None:
 
-        print("=" * 50)
-        print("FP8 linear method online quantization called")
-        print("block quant", self.block_quant)
-        print("is checkpoints fp8 serialized", self.quant_config.is_checkpoint_fp8_serialized)
-        import traceback
-        print(traceback.print_stack())
-        print("=" * 50)
-
         # Block quant doesn't need to process weights after loading
         if self.block_quant:
             return
         layer.weight = torch.nn.Parameter(layer.weight.data, requires_grad=False)
         # If checkpoint not serialized fp8, quantize the weights.
         if not self.quant_config.is_checkpoint_fp8_serialized:
+            # 这里确实是把 weights 转换成 FP8 了
             qweight, weight_scale = ops.scaled_fp8_quant(layer.weight, scale=None)
 
             # If using marlin (w8a16), kernel uses channelwise weights,
